@@ -22,17 +22,24 @@ jobs:
         run: |
           set -e
           
-          pylint main.py | tee pylint.log || true  # Prevent pipeline failure
+          # Run pylint on all Python files
+          pylint $(find main.py) | tee pylint.log || true  
 
+          # Extract pylint score
           SCORE=$(grep -oE 'rated at [0-9]+.[0-9]+/10' pylint.log | awk '{print $3}' | cut -d'/' -f1 || echo "0")
 
           if [[ -z "$SCORE" ]]; then
             echo "Error: Could not determine pylint score!"
             cat pylint.log
-          else
-            echo "Pylint score is $SCORE/10"
+            exit 1  # Fail the job
           fi
 
+          echo "Pylint score is $SCORE/10"
+
+          # Ignore if score is below 10 (exit successfully)
           if (( $(echo "$SCORE < 10" | bc -l) )); then
-            echo "Warning: Pylint score is below 10/10, but continuing."
+            echo "Ignoring pylint score below 10."
+            exit 0  # Exit successfully
           fi
+
+      # No need for "Fail job if pylint score is low" because low scores are ignored.
