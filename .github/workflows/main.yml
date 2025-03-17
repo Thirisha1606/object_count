@@ -1,0 +1,42 @@
+name: Pylint Check
+
+on: [push, pull_request]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install pylint
+
+      - name: Run pylint
+        id: pylint_check
+        run: |
+          SCORE=$(pylint script.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+
+          if [[ -z "$SCORE" ]]; then
+            echo "Error: Could not determine pylint score!"
+            cat pylint.log
+            exit 1
+          fi
+
+          echo "Pylint score is $SCORE/10"
+
+          if (( $(echo "$SCORE < 10" | bc -l) )); then
+            echo "Pylint score is too low. Failing pipeline!"
+            exit 1
+          else
+            echo "Pylint score is 10/10. Passed!"
+          fi
+
+      - name: Fail job if pylint score is low
+        if: failure()
+        run: exit 1
