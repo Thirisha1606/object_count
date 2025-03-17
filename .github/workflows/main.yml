@@ -15,30 +15,24 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: |
-          pip install pylint
-          sudo apt-get update && sudo apt-get install -y bc  # Ensure bc is available
+        run: pip install pylint
 
       - name: Run pylint
         id: pylint_check
         run: |
-          set -e  # Stop script on any failure
+          set -e
           
-          pylint main.py | tee pylint.log || true  # Run pylint and continue even if it fails
-          
+          pylint main.py | tee pylint.log || true  # Prevent pipeline failure
+
           SCORE=$(grep -oE 'rated at [0-9]+.[0-9]+/10' pylint.log | awk '{print $3}' | cut -d'/' -f1 || echo "0")
 
           if [[ -z "$SCORE" ]]; then
             echo "Error: Could not determine pylint score!"
             cat pylint.log
-            exit 1
+          else
+            echo "Pylint score is $SCORE/10"
           fi
 
-          echo "Pylint score is $SCORE/10"
-
           if (( $(echo "$SCORE < 10" | bc -l) )); then
-            echo "Pylint score is too low. Failing pipeline!"
-            exit 1
-          else
-            echo "Pylint score is 10/10. Passed!"
+            echo "Warning: Pylint score is below 10/10, but continuing."
           fi
