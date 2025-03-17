@@ -1,6 +1,11 @@
-name: Pylint Check
-
-on: [push, pull_request]
+name: Object Counter Pylint Check
+on:
+  push:
+    paths:
+      - 'ultralytics/solutions/object_counter/**/*.py'
+  pull_request:
+    paths:
+      - 'ultralytics/solutions/object_counter/**/*.py'
 
 jobs:
   pylint:
@@ -8,31 +13,32 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-
+      
       - name: Install dependencies
-        run: pip install pylint
-
-      - name: Run pylint
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+          pip install -e .
+      
+      - name: Run pylint on object counter module
         id: pylint_check
         run: |
-          SCORE=$(pylint main.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
-
+          SCORE=$(pylint ultralytics/solutions/object_counter | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
           if [[ -z "$SCORE" ]]; then
             echo "❌ Error: Could not determine pylint score!"
             cat pylint.log
-            exit 0  # Ignore commit (No Failure)
+            exit 0  # Continue workflow (No Failure)
           fi
-
+          
           echo "🔍 Pylint score is $SCORE/10"
-
           if (( $(echo "$SCORE < 10" | bc -l) )); then
-            echo "⚠️ Pylint score is below 10/10. Ignoring commit!"
-            exit 0  # Ignore commit (No Failure)
+            echo "⚠️ Pylint score is below 10/10, but continuing workflow."
+            exit 0  # Continue workflow (No Failure)
           else
-            echo "✅ Pylint score is 10/10. Proceeding with commit!"
+            echo "✅ Pylint score is 10/10!"
           fi
