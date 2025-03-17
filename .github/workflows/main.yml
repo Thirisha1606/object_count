@@ -15,12 +15,18 @@ jobs:
           python-version: '3.x'
 
       - name: Install dependencies
-        run: pip install pylint
+        run: |
+          pip install pylint
+          sudo apt-get update && sudo apt-get install -y bc  # Ensure bc is available
 
       - name: Run pylint
         id: pylint_check
         run: |
-          SCORE=$(pylint main.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+          set -e  # Stop script on any failure
+          
+          pylint main.py | tee pylint.log || true  # Run pylint and continue even if it fails
+          
+          SCORE=$(grep -oE 'rated at [0-9]+.[0-9]+/10' pylint.log | awk '{print $3}' | cut -d'/' -f1 || echo "0")
 
           if [[ -z "$SCORE" ]]; then
             echo "Error: Could not determine pylint score!"
@@ -36,7 +42,3 @@ jobs:
           else
             echo "Pylint score is 10/10. Passed!"
           fi
-
-      - name: Fail job if pylint score is low
-        if: failure()
-        run: exit 1
