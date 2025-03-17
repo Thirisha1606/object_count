@@ -20,26 +20,19 @@ jobs:
       - name: Run pylint
         id: pylint_check
         run: |
-          set -e
-          
-          # Run pylint on all Python files
-          pylint $(find main.py) | tee pylint.log || true  
-
-          # Extract pylint score
-          SCORE=$(grep -oE 'rated at [0-9]+.[0-9]+/10' pylint.log | awk '{print $3}' | cut -d'/' -f1 || echo "0")
+          SCORE=$(pylint script.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
 
           if [[ -z "$SCORE" ]]; then
             echo "Error: Could not determine pylint score!"
             cat pylint.log
-            exit 1  # Fail the job
+            exit 1
           fi
 
           echo "Pylint score is $SCORE/10"
 
-          # Ignore if score is below 10 (exit successfully)
-          if (( $(echo "$SCORE < 10" | bc -l) )); then
-            echo "Ignoring pylint score below 10."
-            exit 0  # Exit successfully
+          if (( $(echo "$SCORE < 100" | bc -l) )); then
+            echo "Pylint score is below 100, ignoring the commit."
+            exit 0  # Ignore the commit (do not fail)
+          else
+            echo "Pylint score is 100/100. Proceeding with the pipeline."
           fi
-
-      # No need for "Fail job if pylint score is low" because low scores are ignored.
