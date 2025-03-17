@@ -20,7 +20,7 @@ jobs:
       - name: Run pylint
         id: pylint_check
         run: |
-          SCORE=$(pylint script.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+          SCORE=$(pylint main.py | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
 
           if [[ -z "$SCORE" ]]; then
             echo "Error: Could not determine pylint score!"
@@ -30,9 +30,8 @@ jobs:
 
           echo "Pylint score is $SCORE/10"
 
-          if (( $(echo "$SCORE < 100" | bc -l) )); then
-            echo "Pylint score is below 100, ignoring the commit."
-            exit 0  # Ignore the commit (do not fail)
+          if (( $(echo "$SCORE < 10" | bc -l) )); then
+            echo "Pylint score is below 10/10. Ignoring commit."
+            exit 1  # Stop pipeline and prevent commit
           else
-            echo "Pylint score is 100/100. Proceeding with the pipeline."
-          fi
+            echo "Pylint score is 10/10. Proceeding with the pipeline."
