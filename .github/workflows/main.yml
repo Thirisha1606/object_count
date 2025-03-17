@@ -2,10 +2,10 @@ name: Object Counter Pylint Check
 on:
   push:
     paths:
-      - 'ultralytics/solutions/object_counter/**/*.py'
+      - 'main.py'
   pull_request:
     paths:
-      - 'ultralytics/solutions/object_counter/**/*.py'
+      - 'main.py'
 
 jobs:
   pylint:
@@ -28,7 +28,7 @@ jobs:
       - name: Run pylint on object counter module
         id: pylint_check
         run: |
-          SCORE=$(pylint ultralytics/solutions/object_counter | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+          SCORE=$(pylint main | tee pylint.log | grep -oE 'rated at [0-9]+.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
           if [[ -z "$SCORE" ]]; then
             echo "❌ Error: Could not determine pylint score!"
             cat pylint.log
