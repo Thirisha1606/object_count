@@ -1,21 +1,39 @@
-- name: Run pylint
-  id: pylint_check
-  run: |
-    set -e  # Exit on any error
-    SCORE=$(pylint main.py | tee pylint.log | grep -oE 'rated at [0-9]+\.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+name: Pylint Check
 
-    if [[ -z "$SCORE" ]]; then
-      echo "Error: Could not determine pylint score!"
-      cat pylint.log
-      exit 1
-    fi
+on: [push, pull_request]
 
-    echo "Pylint score is $SCORE/10"
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # Ensure proper comparison by converting to integer
-    if (( $(echo "$SCORE < 10" | bc -l) )); then
-      echo "Pylint score is below 10/10. Failing pipeline!"
-      exit 1
-    fi
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-    echo "Pylint score is 10/10. Passed!"
+      - name: Install dependencies
+        run: pip install pylint
+
+      - name: Run pylint
+        id: pylint_check
+        run: |
+          set -e  # Exit on first error
+          SCORE=$(pylint main.py | tee pylint.log | grep -oE 'rated at [0-9]+\.[0-9]+/10' | awk '{print $3}' | cut -d'/' -f1)
+
+          if [[ -z "$SCORE" ]]; then
+            echo "Error: Could not determine pylint score!"
+            cat pylint.log
+            exit 1
+          fi
+
+          echo "Pylint score is $SCORE/10"
+
+          if (( $(echo "$SCORE < 10" | bc -l) )); then
+            echo "❌ Pylint score is below 10/10. Rejecting commit!"
+            exit 1
+          fi
+
+          echo "✅ Pylint score is 10/10. Proceeding!"
